@@ -29,7 +29,7 @@ export function HeroBanner() {
       {/* Content */}
       <div className="relative h-full max-w-7xl mx-auto px-6 flex items-center">
         <div className="max-w-2xl text-white">
-          <p className="text-emerald-400 tracking-wider mb-4" style={{ fontFamily: 'Dancing Script, cursive', fontSize: '18px' }}><span className="font-bold">SELAMAT DATANG DI KLINIKU</span><span className="font-bold">SELAMAT DATANG DI KLINIKU</span></p>
+          <p className="text-emerald-400 tracking-wider mb-4" style={{ fontFamily: 'Dancing Script, cursive', fontSize: '18px' }}><span className="font-bold">SELAMAT DATANG DI KLINIKU</span></p>
           <h1 className="text-5xl font-bold mb-6 leading-tight">
             Mitra Kesehatan Terpercaya untuk Keluarga Anda
           </h1>
