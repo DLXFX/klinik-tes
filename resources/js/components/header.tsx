@@ -33,7 +33,7 @@ export function Header() {
           >
             <button className="flex items-center gap-1 text-[#0B2447] hover:text-emerald-600 transition-colors">
               Layanan
-              <ChevronDown className="w-4 h-4" />
+              
             </button>
             
             {isLayananOpen && (

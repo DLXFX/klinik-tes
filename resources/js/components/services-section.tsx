@@ -60,9 +60,7 @@ export function ServicesSection() {
               </p>
 
               {/* Button */}
-              <button className="bg-[#FF6B35] hover:bg-[#ff5722] text-white px-6 py-2 rounded-full transition-colors">
-                Selengkapnya
-              </button>
+              
             </div>
           ))}
         </div>

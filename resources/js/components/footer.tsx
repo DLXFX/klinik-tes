@@ -78,7 +78,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-white/10 pt-8 text-center text-gray-400">
-          <p>&copy; 2026 KliniKu. Hak Cipta Dilindungi Undang-Undang.</p>
+          
         </div>
       </div>
     </footer>

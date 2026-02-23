@@ -34,9 +34,7 @@ export function AboutSection() {
             <p className="text-gray-700 leading-relaxed mb-8">
               Didukung oleh tim dokter spesialis bersertifikat, peralatan medis modern, dan lingkungan yang bersih serta nyaman, kami berkomitmen memberikan pelayanan kesehatan holistik yang berfokus pada kesembuhan dan kesejahteraan setiap individu dan keluarga.
             </p>
-            <button className="border-2 border-[#0B2447] text-[#0B2447] hover:bg-[#0B2447] hover:text-white px-8 py-3 rounded-full transition-all">
-              Pelajari Lebih Lanjut
-            </button>
+            
           </div>
         </div>
       </div>

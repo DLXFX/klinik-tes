@@ -22,22 +22,10 @@ export function FloatingButtons() {
       {/* Bottom Left - Contact Buttons */}
       <div className="fixed bottom-8 left-8 flex flex-col gap-3 z-40">
         {/* WhatsApp */}
-        <a
-          href="https://wa.me/6281234567890"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-14 h-14 rounded-full bg-emerald-500 hover:bg-emerald-600 flex items-center justify-center shadow-lg transition-colors group"
-        >
-          <MessageCircle className="w-7 h-7 text-white" fill="white" />
-        </a>
+        
 
         {/* Phone */}
-        <a
-          href="tel:+6281234567890"
-          className="w-14 h-14 rounded-full bg-blue-500 hover:bg-blue-600 flex items-center justify-center shadow-lg transition-colors group"
-        >
-          <Phone className="w-6 h-6 text-white" fill="white" />
-        </a>
+        
       </div>
 
       {/* Bottom Right - Back to Top */}

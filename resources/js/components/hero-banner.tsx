@@ -29,9 +29,7 @@ export function HeroBanner() {
       {/* Content */}
       <div className="relative h-full max-w-7xl mx-auto px-6 flex items-center">
         <div className="max-w-2xl text-white">
-          <p className="text-emerald-400 tracking-wider mb-4" style={{ fontFamily: 'Dancing Script, cursive', fontSize: '18px' }}>
-            SELAMAT DATANG DI KLINIKU
-          </p>
+          <p className="text-emerald-400 tracking-wider mb-4" style={{ fontFamily: 'Dancing Script, cursive', fontSize: '18px' }}><span className="font-bold">SELAMAT DATANG DI KLINIKU</span><span className="font-bold">SELAMAT DATANG DI KLINIKU</span></p>
           <h1 className="text-5xl font-bold mb-6 leading-tight">
             Mitra Kesehatan Terpercaya untuk Keluarga Anda
           </h1>
@@ -45,29 +43,13 @@ export function HeroBanner() {
       </div>
 
       {/* Navigation Arrows */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
-      >
-        <ChevronLeft className="w-6 h-6 text-white" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-colors"
-      >
-        <ChevronRight className="w-6 h-6 text-white" />
-      </button>
+      
+      
 
       {/* Pagination Dots */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
         {[...Array(totalSlides)].map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              currentSlide === index ? 'bg-[#FF6B35] w-8' : 'bg-white/50'
-            }`}
-          />
+          null
         ))}
       </div>
     </section>
