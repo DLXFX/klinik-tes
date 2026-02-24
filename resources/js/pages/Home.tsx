@@ -8,7 +8,7 @@ import { StatisticsSection } from '../components/statistics-section';
 import { FloatingButtons } from '../components/floating-buttons';
 import { Footer } from '../components/footer';
 
-export default function App() {
+export default function HomePage() {
   return (
     <div className="min-h-screen" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <Header />

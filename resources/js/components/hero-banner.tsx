@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Link } from '@inertiajs/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 export function HeroBanner() {
@@ -36,9 +37,12 @@ export function HeroBanner() {
           <p className="text-lg mb-8 text-gray-200 leading-relaxed">
             Kami berkomitmen menyediakan layanan kesehatan berkualitas tinggi dengan dukungan teknologi medis terkini dan tim dokter yang berpengalaman, demi kenyamanan dan kesembuhan Anda.
           </p>
-          <button className="bg-[#FF6B35] hover:bg-[#ff5722] text-white px-8 py-4 rounded-full transition-colors shadow-lg">
+          <Link 
+            href="/buat-janji"
+            className="inline-block bg-[#FF6B35] hover:bg-[#ff5722] text-white px-8 py-4 rounded-full transition-colors shadow-lg"
+          >
             Buat Janji Temu
-          </button>
+          </Link>
         </div>
       </div>
 

@@ -30,12 +30,7 @@ export function FloatingButtons() {
 
       {/* Bottom Right - Back to Top */}
       {showBackToTop && (
-        <button
-          onClick={scrollToTop}
-          className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-[#FF6B35] hover:bg-[#ff5722] flex items-center justify-center shadow-lg transition-all z-40 animate-fade-in"
-        >
-          <ArrowUp className="w-6 h-6 text-white" />
-        </button>
+        null
       )}
     </>
   );
