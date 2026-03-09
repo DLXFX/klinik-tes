@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 
 export function HeroBanner() {
@@ -13,6 +13,15 @@ export function HeroBanner() {
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  const handleBuatJanjiClick = (e: any) => {
+    const user = localStorage.getItem('kliniku_currentUser');
+    if (!user) {
+      e.preventDefault(); // Mencegah pindah ke /buat-janji
+      alert('Anda harus login terlebih dahulu untuk membuat janji temu!');
+      router.visit('/login'); // Memaksa pindah ke halaman login
+    }
   };
 
   return (
@@ -39,6 +48,7 @@ export function HeroBanner() {
           </p>
           <Link 
             href="/buat-janji"
+            onClick={handleBuatJanjiClick}
             className="inline-block bg-[#FF6B35] hover:bg-[#ff5722] text-white px-8 py-4 rounded-full transition-colors shadow-lg"
           >
             Buat Janji Temu

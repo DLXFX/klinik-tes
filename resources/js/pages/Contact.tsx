@@ -131,8 +131,7 @@ export default function ContactPage() {
 
               {/* Right Column - Contact Form (60%) */}
               <div className="lg:col-span-3">
-                {/* Form container updated with shadow and border */}
-                <div className="bg-white shadow-xl border border-gray-100 rounded-2xl p-8 lg:p-10">
+                <div className="bg-gray-50 rounded-2xl p-8 lg:p-10">
                   <h2 className="text-2xl font-bold text-[#0B2447] mb-6">
                     Kirim Pesan
                   </h2>
@@ -153,7 +152,7 @@ export default function ContactPage() {
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-gray-400"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900 placeholder:text-gray-400"
                         placeholder="Masukkan nama lengkap Anda"
                       />
                     </div>
@@ -170,7 +169,7 @@ export default function ContactPage() {
                         value={formData.email}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all placeholder:text-gray-400"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900 placeholder:text-gray-400"
                         placeholder="email@example.com"
                       />
                     </div>
@@ -186,9 +185,9 @@ export default function ContactPage() {
                         value={formData.subject}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all text-gray-900"
                       >
-                        <option value="" className="text-gray-400">-- Pilih Subjek --</option>
+                        <option value="">-- Pilih Subjek --</option>
                         <option value="konsultasi">Konsultasi Kesehatan</option>
                         <option value="janji-temu">Buat Janji Temu</option>
                         <option value="informasi-layanan">Informasi Layanan</option>
@@ -210,7 +209,7 @@ export default function ContactPage() {
                         onChange={handleChange}
                         required
                         rows={6}
-                        className="w-full px-4 py-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none placeholder:text-gray-400"
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none transition-all resize-none text-gray-900 placeholder:text-gray-400"
                         placeholder="Tuliskan pesan Anda di sini..."
                       />
                     </div>

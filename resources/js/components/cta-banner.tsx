@@ -1,6 +1,16 @@
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 
 export function CTABanner() {
+  
+  const handleBuatJanjiClick = (e: any) => {
+    const user = localStorage.getItem('kliniku_currentUser');
+    if (!user) {
+      e.preventDefault(); // Mencegah pindah ke /buat-janji
+      alert('Anda harus login terlebih dahulu untuk membuat janji temu!');
+      router.visit('/login'); // Memaksa pindah ke halaman login
+    }
+  };
+
   return (
     <section className="relative py-24 bg-[#0B2447] overflow-hidden">
       {/* Background Pattern */}
@@ -23,7 +33,8 @@ export function CTABanner() {
           KONSULTASIKAN KESEHATAN ANDA HARI INI!
         </h2>
         <Link 
-          href="/buat-janji" 
+          href="/buat-janji"
+          onClick={handleBuatJanjiClick}
           className="inline-block bg-[#FF6B35] hover:bg-[#ff5722] text-white px-10 py-4 rounded-full transition-colors shadow-xl text-lg"
         >
           Hubungi Kami Sekarang
