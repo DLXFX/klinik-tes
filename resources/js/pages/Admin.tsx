@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/react';
 import { 
   LayoutDashboard, Users, Calendar, LogOut, User, CreditCard, 
   FileText, Check, X, Clock, CheckCircle, XCircle, AlertCircle, 
-  Heart, Phone, MapPin, Eye 
+  Heart, Phone, MapPin, Eye, Trash2 
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -38,12 +38,23 @@ export default function AdminDashboard() {
     }
   };
 
-  // Fungsi Tolak Pasien
+  // Fungsi Tolak Pendaftaran Pasien Baru
   const handleRejectPatient = (id: number) => {
     if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
       let patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
       patients = patients.filter((p: any) => p.id !== id);
       localStorage.setItem('kliniku_patients', JSON.stringify(patients));
+      setPendingList(patients.filter((p: any) => p.status === 'pending'));
+    }
+  };
+
+  // Fungsi Hapus Pasien Secara Permanen
+  const handleDeletePatient = (id: number) => {
+    if (confirm('Yakin ingin menghapus data pasien ini secara permanen? Seluruh akunnya akan hilang.')) {
+      let patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
+      patients = patients.filter((p: any) => p.id !== id);
+      localStorage.setItem('kliniku_patients', JSON.stringify(patients));
+      setApprovedList(patients.filter((p: any) => p.status === 'approved'));
       setPendingList(patients.filter((p: any) => p.status === 'pending'));
     }
   };
@@ -54,6 +65,16 @@ export default function AdminDashboard() {
     const index = res.findIndex((r: any) => r.id === id);
     if (index > -1) {
       res[index].status = newStatus;
+      localStorage.setItem('kliniku_reservations', JSON.stringify(res));
+      setReservationList(res);
+    }
+  };
+
+  // Fungsi Hapus Reservasi Secara Permanen
+  const handleDeleteReservation = (id: string) => {
+    if (confirm('Yakin ingin menghapus jadwal reservasi ini dari sistem?')) {
+      let res = JSON.parse(localStorage.getItem('kliniku_reservations') || '[]');
+      res = res.filter((r: any) => r.id !== id);
       localStorage.setItem('kliniku_reservations', JSON.stringify(res));
       setReservationList(res);
     }
@@ -255,7 +276,7 @@ export default function AdminDashboard() {
                           <th className="py-3 px-4 font-bold">No. RM</th>
                           <th className="py-3 px-4 font-bold">Nama Lengkap</th>
                           <th className="py-3 px-4 font-bold">NIK</th>
-                          <th className="py-3 px-4 font-bold">No. WhatsApp</th>
+                          <th className="py-3 px-4 font-bold text-center">Aksi</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -264,7 +285,11 @@ export default function AdminDashboard() {
                             <td className="py-4 px-4"><span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded">{p.noRM}</span></td>
                             <td className="py-4 px-4 text-gray-900 font-bold">{p.namaLengkap}</td>
                             <td className="py-4 px-4 text-gray-600">{p.nik}</td>
-                            <td className="py-4 px-4 text-gray-800">{p.noWhatsApp}</td>
+                            <td className="py-4 px-4 text-center">
+                              <button onClick={() => handleDeletePatient(p.id)} className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm flex items-center justify-center mx-auto gap-1">
+                                <Trash2 className="w-3.5 h-3.5" /> Hapus
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -318,19 +343,24 @@ export default function AdminDashboard() {
                           {getStatusBadge(r.status)}
                         </td>
                         <td className="py-4 px-4">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-1.5">
                             {r.status === 'pending' && (
                               <>
-                                <button onClick={() => handleUpdateStatus(r.id, 'confirmed')} className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs font-bold shadow">Confirm</button>
-                                <button onClick={() => handleUpdateStatus(r.id, 'cancelled')} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-bold shadow">Batal</button>
+                                <button onClick={() => handleUpdateStatus(r.id, 'confirmed')} className="bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1 rounded text-xs font-bold shadow">Confirm</button>
+                                <button onClick={() => handleUpdateStatus(r.id, 'cancelled')} className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-2.5 py-1 rounded text-xs font-bold shadow">Batal</button>
                               </>
                             )}
                             {r.status === 'confirmed' && (
-                              <button onClick={() => handleUpdateStatus(r.id, 'completed')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded text-xs font-bold shadow">Selesai</button>
+                              <button onClick={() => handleUpdateStatus(r.id, 'completed')} className="bg-emerald-500 hover:bg-emerald-600 text-white px-2.5 py-1 rounded text-xs font-bold shadow">Selesai</button>
                             )}
                             {(r.status === 'completed' || r.status === 'cancelled') && (
-                              <span className="text-gray-400 text-xs italic">Selesai</span>
+                              <span className="text-gray-400 text-xs italic flex-1 text-center">Selesai</span>
                             )}
+                            
+                            {/* Tombol Hapus Permanen */}
+                            <button onClick={() => handleDeleteReservation(r.id)} className="bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 p-1.5 rounded transition-colors ml-1" title="Hapus Permanen">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
                           </div>
                         </td>
                       </tr>
