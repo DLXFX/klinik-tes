@@ -45,6 +45,7 @@ class AppointmentController extends Controller
             'service' => $request->service,
             'appointment_date' => $request->appointment_date,
             'appointment_time' => $request->appointment_time,
+            'no_whatsapp' => $request->no_whatsapp,
             'complaint' => $request->complaint,
             'status' => 'pending'
         ]);

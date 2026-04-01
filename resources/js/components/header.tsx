@@ -18,9 +18,9 @@ export function Header() {
     setIsLoggedIn(true);
 
     setUserName(
-      user?.namaLengkap
-        ? user.namaLengkap.split(' ')[0]
-        : user?.nama || 'Pasien'
+      user?.name
+        ? user.name.split(' ')[0]
+        : 'Pasien'
     );
 
   } catch (error) {

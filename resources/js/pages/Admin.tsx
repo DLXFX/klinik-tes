@@ -13,127 +13,96 @@ export default function AdminDashboard() {
   const [approvedList, setApprovedList] = useState<any[]>([]);
   const [reservationList, setReservationList] = useState<any[]>([]);
   const [selectedKTP, setSelectedKTP] = useState<string | null>(null);
-  
-
 
   useEffect(() => {
-
-  // ambil data pasien dari database
-  fetch('/api/patients')
-    .then(res => res.json())
-    .then(data => {
-      setPendingList(data.filter((p:any) => p.status === 'pending'));
-      setApprovedList(data.filter((p:any) => p.status === 'approved'));
-    });
-
-  // ambil data reservasi dari database
-  fetch('/api/appointments')
-    .then(res => res.json())
-    .then(data => {
-      setReservationList(data);
-    });
-
-}, []);
-
-  // Fungsi Terima Pasien
- const handleApprovePatient = async (id:number) => {
-
-  await fetch(`/api/patients/${id}/approve`,{
-    method:'POST'
-  });
-
-  // refresh data
-  const res = await fetch('/api/patients');
-  const data = await res.json();
-
-  setPendingList(data.filter((p:any)=>p.status==='pending'));
-  setApprovedList(data.filter((p:any)=>p.status==='approved'));
-
-};
-
-  // Fungsi Tolak Pendaftaran Pasien Baru (GANTI KODE LAMA ANDA DENGAN INI)
-const handleRejectPatient = async (id: number) => {
-  if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
-    try {
-      // 1. Kirim perintah hapus ke database melalui API
-      const response = await fetch(`/api/patients/${id}`, {
-        method: 'DELETE',
+    fetch('/api/patients')
+      .then(res => res.json())
+      .then(data => {
+        setPendingList(data.filter((p:any) => p.status === 'pending'));
+        setApprovedList(data.filter((p:any) => p.status === 'approved'));
       });
 
-      if (response.ok) {
-        // 2. Jika database berhasil menghapus, baru update tampilan di layar
-        setPendingList(prev => prev.filter((p: any) => p.id !== id));
-        alert('Pendaftaran berhasil ditolak dan data dihapus.');
-      } else {
-        alert('Gagal menghapus data di server.');
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert('Terjadi kesalahan koneksi.');
-    }
-  }
-};
+    fetch('/api/appointments')
+      .then(res => res.json())
+      .then(data => {
+        setReservationList(data);
+      });
+  }, []);
 
-  // Fungsi Hapus Pasien Secara Permanen
-  const handleDeletePatient = async (id: number) => {
-
-  if (!confirm('Yakin ingin menghapus data pasien ini secara permanen?')) return;
-
-  try {
-
-    await fetch(`/api/patients/${id}`, {
-      method: 'DELETE'
+  const handleApprovePatient = async (id:number) => {
+    await fetch(`/api/patients/${id}/approve`,{
+      method:'POST'
     });
 
-    setApprovedList(prev => prev.filter((p:any) => p.id !== id));
-    setPendingList(prev => prev.filter((p:any) => p.id !== id));
+    const res = await fetch('/api/patients');
+    const data = await res.json();
 
-  } catch (error) {
-    alert('Gagal menghapus pasien');
-    console.error(error);
-  }
-
-};
-
-  // Fungsi Update Status Reservasi
-  const handleUpdateStatus = async (id:number,newStatus:string) => {
-
-  await fetch(`/api/appointments/${id}/status`,{
-    method:'POST',
-    headers:{
-      'Content-Type':'application/json'
-    },
-    body:JSON.stringify({
-      status:newStatus
-    })
-  })
-  
-  const res = await fetch('/api/appointments')
-  const data = await res.json()
-
-  setReservationList(data)
-
+    setPendingList(data.filter((p:any)=>p.status==='pending'));
+    setApprovedList(data.filter((p:any)=>p.status==='approved'));
   };
 
-  // Fungsi Hapus Reservasi Secara Permanen
-  const handleDeleteReservation = async (id:number)=>{
+  const handleRejectPatient = async (id: number) => {
+    if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
+      try {
+        const response = await fetch(`/api/patients/${id}`, {
+          method: 'DELETE',
+        });
 
-  if(confirm('Yakin ingin menghapus jadwal reservasi ini dari sistem?')){
+        if (response.ok) {
+          setPendingList(prev => prev.filter((p: any) => p.id !== id));
+          alert('Pendaftaran berhasil ditolak dan data dihapus.');
+        } else {
+          alert('Gagal menghapus data di server.');
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert('Terjadi kesalahan koneksi.');
+      }
+    }
+  };
 
-    await fetch(`/api/appointments/${id}`,{
-      method:'DELETE'
+  const handleDeletePatient = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus data pasien ini secara permanen?')) return;
+
+    try {
+      await fetch(`/api/patients/${id}`, {
+        method: 'DELETE'
+      });
+      setApprovedList(prev => prev.filter((p:any) => p.id !== id));
+      setPendingList(prev => prev.filter((p:any) => p.id !== id));
+    } catch (error) {
+      alert('Gagal menghapus pasien');
+      console.error(error);
+    }
+  };
+
+  const handleUpdateStatus = async (id:number,newStatus:string) => {
+    await fetch(`/api/appointments/${id}/status`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json'
+      },
+      body:JSON.stringify({
+        status:newStatus
+      })
     })
-
+    
     const res = await fetch('/api/appointments')
     const data = await res.json()
-
     setReservationList(data)
+  };
 
-  }
+  const handleDeleteReservation = async (id:number)=>{
+    if(confirm('Yakin ingin menghapus jadwal reservasi ini dari sistem?')){
+      await fetch(`/api/appointments/${id}`,{
+        method:'DELETE'
+      })
+      const res = await fetch('/api/appointments')
+      const data = await res.json()
+      setReservationList(data)
+    }
+  };
 
-};
-
-  // Label Status Cantik
   const getStatusBadge = (status: string) => {
     const badges: any = {
       pending: { bg: 'bg-amber-100', text: 'text-amber-700', icon: <Clock className="w-3.5 h-3.5" />, label: 'Pending' },
@@ -149,11 +118,10 @@ const handleRejectPatient = async (id: number) => {
     );
   };
 
-  // Hitung jadwal hari ini
   const today = new Date().toISOString().split('T')[0];
   const todayAppointments = reservationList.filter(
-  (r:any) => r.appointment_date === today
-).length;
+    (r:any) => r.appointment_date === today
+  ).length;
 
   return (
     <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -204,7 +172,6 @@ const handleRejectPatient = async (id: number) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              {/* Kartu 1 */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
@@ -216,7 +183,6 @@ const handleRejectPatient = async (id: number) => {
                 <p className="text-sm text-emerald-600 mt-1">Pasien aktif di sistem</p>
               </div>
 
-              {/* Kartu 2 */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-amber-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
@@ -228,7 +194,6 @@ const handleRejectPatient = async (id: number) => {
                 <p className="text-sm text-amber-600 mt-1">Pendaftaran baru pasien</p>
               </div>
 
-              {/* Kartu 3 */}
               <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
                 <div className="flex items-center justify-between mb-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -298,28 +263,32 @@ const handleRejectPatient = async (id: number) => {
                             <th className="py-3 px-4 font-bold text-center">Aksi</th>
                           </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100">
                           {pendingList.map((p) => (
-                            <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                              <td className="py-4 px-4">
+                            <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                              <td className="py-4 px-4 align-middle">
                                 <p className="font-bold text-gray-900">{p.name}</p>
-                                <p className="text-sm text-gray-600">{p.nik}</p>
+                                <p className="text-sm text-gray-500">{p.nik}</p>
                               </td>
-                              <td className="py-4 px-4 text-gray-800">{p.noWhatsApp}</td>
-                              <td className="py-4 px-4 text-center">
+                              <td className="py-4 px-4 align-middle text-gray-600">
+                                {p.no_whatsapp || p.noWhatsApp || <span className="text-gray-400 italic">Kosong</span>}
+                              </td>
+                              <td className="py-4 px-4 align-middle text-center">
                                 <button
-  onClick={() =>
-    setSelectedKTP(`/storage/${p.foto_ktp}`)
-  }
-  className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-semibold text-sm hover:bg-blue-200 transition-colors"
->
-  Lihat KTP
-</button>
+                                  onClick={() => setSelectedKTP(`/storage/${p.foto_ktp}`)}
+                                  className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-1.5 rounded-full font-semibold text-sm hover:bg-blue-600 hover:text-white transition-all"
+                                >
+                                  Lihat KTP
+                                </button>
                               </td>
-                              <td className="py-4 px-4">
-                                <div className="flex items-center justify-center gap-2">
-                                  <button onClick={() => handleApprovePatient(p.id)} className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-1.5 rounded-lg transition-all text-sm font-bold shadow">Terima</button>
-                                  <button onClick={() => handleRejectPatient(p.id)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg transition-all text-sm font-bold shadow">Tolak</button>
+                              <td className="py-4 px-4 align-middle">
+                                <div className="flex items-center justify-center gap-3">
+                                  <button onClick={() => handleApprovePatient(p.id)} className="bg-emerald-50 hover:bg-emerald-500 text-emerald-600 hover:text-white border border-emerald-200 px-4 py-1.5 rounded-full transition-all text-sm font-bold shadow-sm">
+                                    Terima
+                                  </button>
+                                  <button onClick={() => handleRejectPatient(p.id)} className="bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 px-4 py-1.5 rounded-full transition-all text-sm font-bold shadow-sm">
+                                    Tolak
+                                  </button>
                                 </div>
                               </td>
                             </tr>
@@ -334,22 +303,43 @@ const handleRejectPatient = async (id: number) => {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
+                        {/* PERBAIKAN: Header Diperbarui untuk WA dan KTP */}
                         <tr className="border-b-2 border-gray-200 text-gray-800">
                           <th className="py-3 px-4 font-bold">No. RM</th>
-                          <th className="py-3 px-4 font-bold">Nama Lengkap</th>
-                          <th className="py-3 px-4 font-bold">NIK</th>
+                          <th className="py-3 px-4 font-bold">Nama & NIK</th>
+                          <th className="py-3 px-4 font-bold">WhatsApp</th>
+                          <th className="py-3 px-4 font-bold text-center">Foto KTP</th>
                           <th className="py-3 px-4 font-bold text-center">Aksi</th>
                         </tr>
                       </thead>
-                      <tbody>
+                      <tbody className="divide-y divide-gray-100">
                         {approvedList.map((p) => (
-                          <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-4 px-4"><span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded">{p.medical_record_number}</span></td>
-                            <td className="py-4 px-4 text-gray-900 font-bold">{p.name}</td>
-                            <td className="py-4 px-4 text-gray-600">{p.nik}</td>
-                            <td className="py-4 px-4 text-center">
-                              <button onClick={() => handleDeletePatient(p.id)} className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm flex items-center justify-center mx-auto gap-1">
-                                <Trash2 className="w-3.5 h-3.5" /> Hapus
+                          <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-4 px-4 align-middle">
+                              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-emerald-100 text-emerald-700">
+                                {p.medical_record_number || 'Belum Ada'}
+                              </span>
+                            </td>
+                            <td className="py-4 px-4 align-middle">
+                              <p className="font-bold text-gray-900">{p.name}</p>
+                              <p className="text-sm text-gray-500">{p.nik}</p>
+                            </td>
+                            {/* PERBAIKAN: Isi Nomor WA */}
+                            <td className="py-4 px-4 align-middle text-gray-600">
+                              {p.no_whatsapp || p.noWhatsApp || <span className="text-gray-400 italic">Kosong</span>}
+                            </td>
+                            {/* PERBAIKAN: Tombol Lihat KTP */}
+                            <td className="py-4 px-4 align-middle text-center">
+                                <button
+                                  onClick={() => setSelectedKTP(`/storage/${p.foto_ktp}`)}
+                                  className="bg-blue-50 text-blue-600 border border-blue-200 px-4 py-1.5 rounded-full font-semibold text-sm hover:bg-blue-600 hover:text-white transition-all"
+                                >
+                                  Lihat KTP
+                                </button>
+                            </td>
+                            <td className="py-4 px-4 align-middle text-center">
+                              <button onClick={() => handleDeletePatient(p.id)} className="inline-flex items-center justify-center gap-1.5 bg-red-50 hover:bg-red-500 text-red-600 hover:text-white border border-red-200 px-4 py-1.5 rounded-full transition-all text-sm font-bold shadow-sm">
+                                <Trash2 className="w-4 h-4" /> Hapus
                               </button>
                             </td>
                           </tr>
@@ -376,7 +366,7 @@ const handleRejectPatient = async (id: number) => {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b-2 border-gray-200 text-gray-800">
-                      <th className="py-3 px-4 font-bold">Pasien</th>
+                      <th className="py-3 px-4 font-bold">Pasien & Kontak</th>
                       <th className="py-3 px-4 font-bold">Layanan & Dokter</th>
                       <th className="py-3 px-4 font-bold">Jadwal</th>
                       <th className="py-3 px-4 font-bold text-center">Status</th>
@@ -392,6 +382,10 @@ const handleRejectPatient = async (id: number) => {
                         <td className="py-4 px-4">
                           <p className="font-bold text-gray-900">{r.patient?.name}</p>
                           <p className="text-xs font-semibold text-emerald-600">{r.patient?.medical_record_number}</p>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                            <Phone className="w-3 h-3" />
+                            <span>{r.no_whatsapp || 'Tidak ada WA'}</span>
+                          </div>
                         </td>
                         <td className="py-4 px-4">
                           <p className="font-bold text-gray-800">{r.service}</p>
@@ -419,7 +413,6 @@ const handleRejectPatient = async (id: number) => {
                               <span className="text-gray-400 text-xs italic flex-1 text-center">Selesai</span>
                             )}
                             
-                            {/* Tombol Hapus Permanen */}
                             <button onClick={() => handleDeleteReservation(r.id)} className="bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 p-1.5 rounded transition-colors ml-1" title="Hapus Permanen">
                               <Trash2 className="w-4 h-4" />
                             </button>
@@ -447,7 +440,6 @@ const handleRejectPatient = async (id: number) => {
           </div>
         </div>
       )}
-
     </div>
   );
 }

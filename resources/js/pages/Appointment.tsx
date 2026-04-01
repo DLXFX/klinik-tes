@@ -7,21 +7,19 @@ import { User, CreditCard, FileText, Calendar as CalendarIcon, Stethoscope, Cloc
 export default function AppointmentPage() {
   const [loggedInPatient, setLoggedInPatient] = useState<any>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
-  
-
   const [doctors, setDoctors] = useState<any[]>([]);
 
+  // PERBAIKAN: Tambah state noWhatsApp
   const [appointmentData, setAppointmentData] = useState({
-    layanan: '', dokter: '', tanggal: '', waktu: '', keluhan: '',
+    layanan: '', dokter: '', tanggal: '', waktu: '', noWhatsApp: '', keluhan: '',
   });
 
-  // Cek Login Saat Halaman Dimuat
- useEffect(() => {
-  fetch('http://127.0.0.1:8000/api/doctors')
-    .then(res => res.json())
-    .then(data => setDoctors(data))
-    .catch(err => console.log(err));
-}, []);
+  useEffect(() => {
+    fetch('/api/doctors')
+      .then(res => res.json())
+      .then(data => setDoctors(data))
+      .catch(err => console.log(err));
+  }, []);
 
   useEffect(() => {
     const userData = localStorage.getItem('kliniku_currentUser');
@@ -42,37 +40,38 @@ export default function AppointmentPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!loggedInPatient) return;
+    if (!loggedInPatient) return;
 
-  const data = {
-    patient_id: loggedInPatient.id,
-    doctor_id: appointmentData.dokter,
-    service: appointmentData.layanan,
-    appointment_date: appointmentData.tanggal,
-    appointment_time: appointmentData.waktu,
-    complaint: appointmentData.keluhan
+    // PERBAIKAN: Payload data mencakup no_whatsapp
+    const data = {
+      patient_id: loggedInPatient.id,
+      doctor_id: appointmentData.dokter,
+      service: appointmentData.layanan,
+      appointment_date: appointmentData.tanggal,
+      appointment_time: appointmentData.waktu,
+      no_whatsapp: appointmentData.noWhatsApp,
+      complaint: appointmentData.keluhan
+    };
+
+    try {
+      await fetch('/api/appointments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      alert('Janji temu berhasil dibuat!');
+      router.visit('/');
+    } catch (error) {
+      console.error(error);
+      alert('Terjadi kesalahan saat membuat janji.');
+    }
   };
 
-  try {
-    await fetch('http://127.0.0.1:8000/api/appointments', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-
-    alert('Janji temu berhasil dibuat!');
-    router.visit('/');
-  } catch (error) {
-    console.error(error);
-    alert('Terjadi kesalahan saat membuat janji.');
-  }
-};
-
-  // 1. Tahan render dengan layar loading agar tidak crash (Mencegah Black Screen)
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0B2447]">
@@ -84,7 +83,6 @@ export default function AppointmentPage() {
     );
   }
 
-  // 2. Proteksi ganda: Jika entah kenapa data gagal diload, jangan tampilkan error
   if (!loggedInPatient) return null;
 
   return (
@@ -104,28 +102,41 @@ export default function AppointmentPage() {
             
             {/* Left Column - Profil & Kontak */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-emerald-500/20">
-                <div className="bg-gradient-to-r from-[#0B2447] to-[#1a3a5f] p-6 text-white flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                    <User className="w-8 h-8 text-emerald-400" />
+              
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="bg-[#0B2447] p-6 text-white flex items-center gap-4 rounded-t-2xl">
+                  <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 flex items-center justify-center flex-shrink-0 bg-white/5">
+                    <User className="w-6 h-6 text-emerald-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-300 mb-1">Data Pasien</p>
-                    <h3 className="text-xl font-bold">Informasi Anda</h3>
+                    <p className="text-xs text-gray-300 mb-1">Data Pasien</p>
+                    <h3 className="text-lg font-bold">Informasi Anda</h3>
                   </div>
                 </div>
-                <div className="p-6 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <User className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div><p className="text-xs text-gray-500 mb-1">Nama Lengkap</p><p className="text-[#0B2447] font-semibold">{loggedInPatient.namaLengkap}</p></div>
+
+                <div className="p-6 space-y-5 bg-white border border-gray-100 rounded-b-2xl">
+                  <div className="flex items-center gap-4">
+                    <User className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">Nama Lengkap</p>
+                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.name}</p>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div><p className="text-xs text-gray-500 mb-1">NIK</p><p className="text-[#0B2447] font-semibold">{loggedInPatient.nik}</p></div>
+
+                  <div className="flex items-center gap-4">
+                    <CreditCard className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">NIK</p>
+                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.nik}</p>
+                    </div>
                   </div>
-                  <div className="flex items-start gap-3">
-                    <FileText className="w-5 h-5 text-emerald-600 mt-0.5" />
-                    <div><p className="text-xs text-gray-500 mb-1">No. Rekam Medis</p><p className="text-[#0B2447] font-semibold">{loggedInPatient.noRM}</p></div>
+
+                  <div className="flex items-center gap-4">
+                    <FileText className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs text-gray-500 mb-0.5">No. Rekam Medis</p>
+                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.medical_record_number || '-'}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -167,20 +178,19 @@ export default function AppointmentPage() {
                 <div>
                   <label className="block text-sm font-semibold text-[#0B2447] mb-2">Pilih Dokter <span className="text-red-500">*</span></label>
                   <select
-  name="dokter"
-  value={appointmentData.dokter}
-  onChange={handleChange}
-  required
-  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none"
->
-  <option value="">-- Pilih Dokter --</option>
-
-  {doctors.map((doctor) => (
-    <option key={doctor.id} value={doctor.id}>
-      {doctor.name} - {doctor.specialization}
-    </option>
-  ))}
-</select>
+                    name="dokter"
+                    value={appointmentData.dokter}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none"
+                  >
+                    <option value="">-- Pilih Dokter --</option>
+                    {doctors.map((doctor) => (
+                      <option key={doctor.id} value={doctor.id}>
+                        {doctor.name} - {doctor.specialization}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-6">
@@ -199,6 +209,11 @@ export default function AppointmentPage() {
                       <option value="15:00">15:00 WIB</option>
                     </select>
                   </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-[#0B2447] mb-2">Nomor WhatsApp <span className="text-red-500">*</span></label>
+                  <input type="text" name="noWhatsApp" value={appointmentData.noWhatsApp} onChange={handleChange} required placeholder="Contoh: 081234567890" className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 text-gray-900 bg-white outline-none" />
                 </div>
 
                 <div>

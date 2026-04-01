@@ -6,11 +6,10 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [ktpFile, setKtpFile] = useState<File | null>(null);
   const [ktpPreview, setKtpPreview] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [nikError, setNikError] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // State noWhatsApp sudah ada, kita akan memanfaatkannya
   const [formData, setFormData] = useState({
     nik: '', namaLengkap: '', tanggalLahir: '', alamat: '', noWhatsApp: '', password: '', confirmPassword: '',
   });
@@ -32,50 +31,51 @@ export default function Register() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (formData.nik.length !== 16) {
-    setNikError('NIK harus terdiri dari 16 digit');
-    return;
-  }
-
-  if (formData.password !== formData.confirmPassword) {
-    alert('Password tidak cocok!');
-    return;
-  }
-
-  if (!ktpFile) {
-    alert('Silakan upload foto KTP Anda');
-    return;
-  }
-
-  const data = new FormData();
-
-  data.append("nik", formData.nik);
-  data.append("name", formData.namaLengkap);
-  data.append("email", formData.nik + "@pasien.com");
-  data.append("password", formData.password);
-  data.append("medical_record_number", "");
-  data.append("foto_ktp", ktpFile); // KTP
-
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/patients", {
-      method: "POST",
-      body: data
-    });
-
-    if (!res.ok) {
-      throw new Error("Register gagal");
+    if (formData.nik.length !== 16) {
+      setNikError('NIK harus terdiri dari 16 digit');
+      return;
     }
 
-    setShowSuccessModal(true);
+    if (formData.password !== formData.confirmPassword) {
+      alert('Password tidak cocok!');
+      return;
+    }
 
-  } catch (error) {
-    console.error(error);
-    alert("Terjadi kesalahan saat mendaftar");
-  }
-};
-    // LOGIC: Simpan ke localStorage
+    if (!ktpFile) {
+      alert('Silakan upload foto KTP Anda');
+      return;
+    }
+
+    const data = new FormData();
+    data.append("nik", formData.nik);
+    data.append("name", formData.namaLengkap);
+    data.append("email", formData.nik + "@pasien.com");
+    data.append("password", formData.password);
+    data.append("no_whatsapp", formData.noWhatsApp); // <-- PENGIRIMAN WA
+    data.append("medical_record_number", "");
+    data.append("foto_ktp", ktpFile);
+
+    try {
+      const res = await fetch("/api/patients", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+        },
+        body: data
+      });
+
+      if (!res.ok) {
+        throw new Error("Register gagal");
+      }
+
+      setShowSuccessModal(true);
+    } catch (error) {
+      console.error(error);
+      alert("Terjadi kesalahan saat mendaftar. Pastikan NIK belum terdaftar.");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -106,6 +106,7 @@ export default function Register() {
                 <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input type="text" value={formData.nik} onChange={handleNIKChange} placeholder="Masukkan 16 digit NIK" className="w-full pl-10 pr-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:border-emerald-500 outline-none" required />
               </div>
+              {nikError && <p className="text-red-500 text-sm mt-1">{nikError}</p>}
             </div>
             <div>
               <label className="block text-sm font-semibold text-[#0B2447] mb-2">Upload KTP <span className="text-red-500">*</span></label>
@@ -119,6 +120,16 @@ export default function Register() {
               <label className="block text-sm font-semibold text-[#0B2447] mb-2">Nama Lengkap <span className="text-red-500">*</span></label>
               <input type="text" value={formData.namaLengkap} onChange={(e) => setFormData({ ...formData, namaLengkap: e.target.value })} className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:border-emerald-500 outline-none" required />
             </div>
+
+            {/* INPUT NOMOR WHATSAPP BARU */}
+            <div>
+              <label className="block text-sm font-semibold text-[#0B2447] mb-2">Nomor WhatsApp <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input type="text" value={formData.noWhatsApp} onChange={(e) => setFormData({ ...formData, noWhatsApp: e.target.value })} placeholder="Contoh: 081234567890" className="w-full pl-10 pr-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:border-emerald-500 outline-none" required />
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-[#0B2447] mb-2">Tanggal Lahir <span className="text-red-500">*</span></label>
               <input type="date" value={formData.tanggalLahir} onChange={(e) => setFormData({ ...formData, tanggalLahir: e.target.value })} className="w-full px-4 py-3 bg-white text-gray-900 border-2 border-gray-300 rounded-xl focus:border-emerald-500 outline-none" required />

@@ -29,7 +29,8 @@ class PatientController extends Controller
         'medical_record_number' => null,
         'email' => $request->email,
         'password' => bcrypt($request->password),
-        'foto_ktp' => $path
+        'foto_ktp' => $path,
+        'no_whatsapp' => $request->no_whatsapp,
     ]);
 
     return response()->json([
