@@ -34,18 +34,18 @@ import { cn, toUrl } from '@/lib/utils';
 import type { BreadcrumbItem, NavItem } from '@/types';
 import AppLogo from './app-logo';
 import AppLogoIcon from './app-logo-icon';
-import { dashboard } from '@/routes';
+ 
 
 type Props = {
     breadcrumbs?: BreadcrumbItem[];
 };
 
 const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
+{
+    title: 'Dashboard',
+    href: '/admin/dashboard',
+    icon: LayoutGrid,
+},
 ];
 
 const rightNavItems: NavItem[] = [
@@ -65,8 +65,8 @@ const activeItemStyles =
     'text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100';
 
 export function AppHeader({ breadcrumbs = [] }: Props) {
-    const page = usePage();
-    const { auth } = page.props;
+    const page = usePage<any>();
+    const auth = page.props?.auth ?? null;
     const getInitials = useInitials();
     const { isCurrentUrl, whenCurrentUrl } = useCurrentUrl();
     return (
@@ -135,7 +135,7 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                     </div>
 
                     <Link
-                        href={dashboard()}
+                        href="/admin/dashboard"
                         prefetch
                         className="flex items-center space-x-2"
                     >
@@ -223,17 +223,17 @@ export function AppHeader({ breadcrumbs = [] }: Props) {
                                 >
                                     <Avatar className="size-8 overflow-hidden rounded-full">
                                         <AvatarImage
-                                            src={auth.user.avatar}
-                                            alt={auth.user.name}
+                                            src={auth?.user?.avatar ?? ''}
+                                            alt={auth?.user?.name ?? 'Guest'}
                                         />
                                         <AvatarFallback className="rounded-lg bg-neutral-200 text-black dark:bg-neutral-700 dark:text-white">
-                                            {getInitials(auth.user.name)}
+                                            {getInitials(auth?.user?.name ?? 'Guest')}
                                         </AvatarFallback>
                                     </Avatar>
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
-                                <UserMenuContent user={auth.user} />
+                                {auth?.user && <UserMenuContent user={auth.user} />}
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>

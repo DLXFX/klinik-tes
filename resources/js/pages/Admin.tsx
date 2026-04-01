@@ -13,72 +13,125 @@ export default function AdminDashboard() {
   const [approvedList, setApprovedList] = useState<any[]>([]);
   const [reservationList, setReservationList] = useState<any[]>([]);
   const [selectedKTP, setSelectedKTP] = useState<string | null>(null);
+  
 
-  // Mengambil data dari localStorage saat halaman dimuat
+
   useEffect(() => {
-    const patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-    setPendingList(patients.filter((p: any) => p.status === 'pending'));
-    setApprovedList(patients.filter((p: any) => p.status === 'approved'));
-    setReservationList(JSON.parse(localStorage.getItem('kliniku_reservations') || '[]'));
-  }, []);
+
+  // ambil data pasien dari database
+  fetch('/api/patients')
+    .then(res => res.json())
+    .then(data => {
+      setPendingList(data.filter((p:any) => p.status === 'pending'));
+      setApprovedList(data.filter((p:any) => p.status === 'approved'));
+    });
+
+  // ambil data reservasi dari database
+  fetch('/api/appointments')
+    .then(res => res.json())
+    .then(data => {
+      setReservationList(data);
+    });
+
+}, []);
 
   // Fungsi Terima Pasien
-  const handleApprovePatient = (id: number) => {
-    const patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-    const index = patients.findIndex((p: any) => p.id === id);
-    if (index > -1) {
-      const newRM = `RM-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`;
-      patients[index].status = 'approved';
-      patients[index].noRM = newRM;
-      localStorage.setItem('kliniku_patients', JSON.stringify(patients));
-      
-      setPendingList(patients.filter((p: any) => p.status === 'pending'));
-      setApprovedList(patients.filter((p: any) => p.status === 'approved'));
-      alert(`Pasien disetujui! No. RM: ${newRM}`);
-    }
-  };
+ const handleApprovePatient = async (id:number) => {
 
-  // Fungsi Tolak Pendaftaran Pasien Baru
-  const handleRejectPatient = (id: number) => {
-    if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
-      let patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-      patients = patients.filter((p: any) => p.id !== id);
-      localStorage.setItem('kliniku_patients', JSON.stringify(patients));
-      setPendingList(patients.filter((p: any) => p.status === 'pending'));
+  await fetch(`/api/patients/${id}/approve`,{
+    method:'POST'
+  });
+
+  // refresh data
+  const res = await fetch('/api/patients');
+  const data = await res.json();
+
+  setPendingList(data.filter((p:any)=>p.status==='pending'));
+  setApprovedList(data.filter((p:any)=>p.status==='approved'));
+
+};
+
+  // Fungsi Tolak Pendaftaran Pasien Baru (GANTI KODE LAMA ANDA DENGAN INI)
+const handleRejectPatient = async (id: number) => {
+  if (confirm('Apakah Anda yakin ingin menolak pendaftaran ini?')) {
+    try {
+      // 1. Kirim perintah hapus ke database melalui API
+      const response = await fetch(`/api/patients/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // 2. Jika database berhasil menghapus, baru update tampilan di layar
+        setPendingList(prev => prev.filter((p: any) => p.id !== id));
+        alert('Pendaftaran berhasil ditolak dan data dihapus.');
+      } else {
+        alert('Gagal menghapus data di server.');
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert('Terjadi kesalahan koneksi.');
     }
-  };
+  }
+};
 
   // Fungsi Hapus Pasien Secara Permanen
-  const handleDeletePatient = (id: number) => {
-    if (confirm('Yakin ingin menghapus data pasien ini secara permanen? Seluruh akunnya akan hilang.')) {
-      let patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-      patients = patients.filter((p: any) => p.id !== id);
-      localStorage.setItem('kliniku_patients', JSON.stringify(patients));
-      setApprovedList(patients.filter((p: any) => p.status === 'approved'));
-      setPendingList(patients.filter((p: any) => p.status === 'pending'));
-    }
-  };
+  const handleDeletePatient = async (id: number) => {
+
+  if (!confirm('Yakin ingin menghapus data pasien ini secara permanen?')) return;
+
+  try {
+
+    await fetch(`/api/patients/${id}`, {
+      method: 'DELETE'
+    });
+
+    setApprovedList(prev => prev.filter((p:any) => p.id !== id));
+    setPendingList(prev => prev.filter((p:any) => p.id !== id));
+
+  } catch (error) {
+    alert('Gagal menghapus pasien');
+    console.error(error);
+  }
+
+};
 
   // Fungsi Update Status Reservasi
-  const handleUpdateStatus = (id: string, newStatus: string) => {
-    const res = JSON.parse(localStorage.getItem('kliniku_reservations') || '[]');
-    const index = res.findIndex((r: any) => r.id === id);
-    if (index > -1) {
-      res[index].status = newStatus;
-      localStorage.setItem('kliniku_reservations', JSON.stringify(res));
-      setReservationList(res);
-    }
+  const handleUpdateStatus = async (id:number,newStatus:string) => {
+
+  await fetch(`/api/appointments/${id}/status`,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json'
+    },
+    body:JSON.stringify({
+      status:newStatus
+    })
+  })
+  
+  const res = await fetch('/api/appointments')
+  const data = await res.json()
+
+  setReservationList(data)
+
   };
 
   // Fungsi Hapus Reservasi Secara Permanen
-  const handleDeleteReservation = (id: string) => {
-    if (confirm('Yakin ingin menghapus jadwal reservasi ini dari sistem?')) {
-      let res = JSON.parse(localStorage.getItem('kliniku_reservations') || '[]');
-      res = res.filter((r: any) => r.id !== id);
-      localStorage.setItem('kliniku_reservations', JSON.stringify(res));
-      setReservationList(res);
-    }
-  };
+  const handleDeleteReservation = async (id:number)=>{
+
+  if(confirm('Yakin ingin menghapus jadwal reservasi ini dari sistem?')){
+
+    await fetch(`/api/appointments/${id}`,{
+      method:'DELETE'
+    })
+
+    const res = await fetch('/api/appointments')
+    const data = await res.json()
+
+    setReservationList(data)
+
+  }
+
+};
 
   // Label Status Cantik
   const getStatusBadge = (status: string) => {
@@ -98,7 +151,9 @@ export default function AdminDashboard() {
 
   // Hitung jadwal hari ini
   const today = new Date().toISOString().split('T')[0];
-  const todayAppointments = reservationList.filter(r => r.tanggal === today).length;
+  const todayAppointments = reservationList.filter(
+  (r:any) => r.appointment_date === today
+).length;
 
   return (
     <div className="min-h-screen bg-gray-50 flex" style={{ fontFamily: 'Poppins, sans-serif' }}>
@@ -247,12 +302,19 @@ export default function AdminDashboard() {
                           {pendingList.map((p) => (
                             <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
                               <td className="py-4 px-4">
-                                <p className="font-bold text-gray-900">{p.namaLengkap}</p>
+                                <p className="font-bold text-gray-900">{p.name}</p>
                                 <p className="text-sm text-gray-600">{p.nik}</p>
                               </td>
                               <td className="py-4 px-4 text-gray-800">{p.noWhatsApp}</td>
                               <td className="py-4 px-4 text-center">
-                                <button onClick={() => setSelectedKTP(p.ktpPhoto)} className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-semibold text-sm hover:bg-blue-200 transition-colors">Lihat KTP</button>
+                                <button
+  onClick={() =>
+    setSelectedKTP(`/storage/${p.foto_ktp}`)
+  }
+  className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded font-semibold text-sm hover:bg-blue-200 transition-colors"
+>
+  Lihat KTP
+</button>
                               </td>
                               <td className="py-4 px-4">
                                 <div className="flex items-center justify-center gap-2">
@@ -282,8 +344,8 @@ export default function AdminDashboard() {
                       <tbody>
                         {approvedList.map((p) => (
                           <tr key={p.id} className="border-b border-gray-100 hover:bg-gray-50">
-                            <td className="py-4 px-4"><span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded">{p.noRM}</span></td>
-                            <td className="py-4 px-4 text-gray-900 font-bold">{p.namaLengkap}</td>
+                            <td className="py-4 px-4"><span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-1 rounded">{p.medical_record_number}</span></td>
+                            <td className="py-4 px-4 text-gray-900 font-bold">{p.name}</td>
                             <td className="py-4 px-4 text-gray-600">{p.nik}</td>
                             <td className="py-4 px-4 text-center">
                               <button onClick={() => handleDeletePatient(p.id)} className="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1.5 rounded-lg transition-all text-xs font-bold shadow-sm flex items-center justify-center mx-auto gap-1">
@@ -328,16 +390,16 @@ export default function AdminDashboard() {
                     {reservationList.map((r) => (
                       <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
                         <td className="py-4 px-4">
-                          <p className="font-bold text-gray-900">{r.nama}</p>
-                          <p className="text-xs font-semibold text-emerald-600">{r.noRM}</p>
+                          <p className="font-bold text-gray-900">{r.patient?.name}</p>
+                          <p className="text-xs font-semibold text-emerald-600">{r.patient?.medical_record_number}</p>
                         </td>
                         <td className="py-4 px-4">
-                          <p className="font-bold text-gray-800">{r.layanan}</p>
-                          <p className="text-sm text-gray-600">{r.dokter}</p>
+                          <p className="font-bold text-gray-800">{r.service}</p>
+                          <p className="text-sm text-gray-600">{r.doctor?.name}</p>
                         </td>
                         <td className="py-4 px-4">
-                          <p className="font-bold text-gray-900">{r.tanggal}</p>
-                          <p className="text-sm text-gray-600">{r.waktu} WIB</p>
+                          <p className="font-bold text-gray-900">{r.appointment_date}</p>
+                          <p className="text-sm text-gray-600">{r.appointment_time} WIB</p>
                         </td>
                         <td className="py-4 px-4 text-center">
                           {getStatusBadge(r.status)}

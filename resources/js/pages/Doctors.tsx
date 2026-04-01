@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Header } from '../components/header';
 import { Footer } from '../components/footer';
 import { FloatingButtons } from '../components/floating-buttons';
@@ -5,82 +6,27 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Calendar, Award } from 'lucide-react';
 import { Link } from '@inertiajs/react';
 
-export default function DoctorsPage() {
-  const doctors = [
-    {
-      name: 'Dr. Andi Wijaya, Sp.PD',
-      specialization: 'Dokter Umum',
-      image: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtYWxlJTIwZG9jdG9yJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzQwMjcwMDAwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Senin - Jumat: 08:00 - 15:00',
-      experience: '12 Tahun',
-      education: 'Universitas Indonesia'
-    },
-    {
-      name: 'Dr. Budi Santoso, Sp.KG',
-      specialization: 'Dokter Gigi',
-      image: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxtYWxlJTIwZG9jdG9yJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzQwMjcwMDAwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Senin - Sabtu: 09:00 - 17:00',
-      experience: '10 Tahun',
-      education: 'Universitas Gadjah Mada'
-    },
-    {
-      name: 'Dr. Citra Dewi, Sp.A',
-      specialization: 'Dokter Anak',
-      image: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmZW1hbGUlMjBkb2N0b3IlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NDAyNzAwMDB8MA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Senin - Jumat: 13:00 - 20:00',
-      experience: '8 Tahun',
-      education: 'Universitas Airlangga'
-    },
-    {
-      name: 'Dr. Dian Pratama, Sp.OG',
-      specialization: 'Dokter Kandungan',
-      image: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxmZW1hbGUlMjBkb2N0b3IlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NDAyNzAwMDB8MA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Selasa - Sabtu: 10:00 - 16:00',
-      experience: '15 Tahun',
-      education: 'Universitas Padjadjaran'
-    },
-    {
-      name: 'Dr. Eko Prasetyo, Sp.JP',
-      specialization: 'Dokter Jantung',
-      image: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwzfHxtYWxlJTIwZG9jdG9yJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzQwMjcwMDAwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Rabu - Jumat: 08:00 - 14:00',
-      experience: '18 Tahun',
-      education: 'Universitas Indonesia'
-    },
-    {
-      name: 'Dr. Fitri Handayani, Sp.M',
-      specialization: 'Dokter Mata',
-      image: 'https://images.unsplash.com/photo-1527613426441-4da17471b66d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwzfHxmZW1hbGUlMjBkb2N0b3IlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NDAyNzAwMDB8MA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Senin - Kamis: 09:00 - 15:00',
-      experience: '11 Tahun',
-      education: 'Universitas Diponegoro'
-    },
-    {
-      name: 'Dr. Gani Wijaksana, Sp.PD',
-      specialization: 'Dokter Penyakit Dalam',
-      image: 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHw0fHxtYWxlJTIwZG9jdG9yJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzQwMjcwMDAwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Selasa - Sabtu: 08:00 - 14:00',
-      experience: '14 Tahun',
-      education: 'Universitas Hasanuddin'
-    },
-    {
-      name: 'Dr. Hani Kurniawan, Sp.THT',
-      specialization: 'Dokter THT',
-      image: 'https://images.unsplash.com/photo-1666214280557-f1b5022eb634?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHw0fHxmZW1hbGUlMjBkb2N0b3IlMjBwcm9mZXNzaW9uYWwlMjBwb3J0cmFpdHxlbnwxfHx8fDE3NDAyNzAwMDB8MA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Senin - Jumat: 13:00 - 19:00',
-      experience: '9 Tahun',
-      education: 'Universitas Brawijaya'
-    },
-    {
-      name: 'Dr. Indra Gunawan, Sp.OT',
-      specialization: 'Dokter Bedah Ortopedi',
-      image: 'https://images.unsplash.com/photo-1638202993928-7267aad84c31?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHw1fHxtYWxlJTIwZG9jdG9yJTIwcHJvZmVzc2lvbmFsJTIwcG9ydHJhaXR8ZW58MXx8fHwxNzQwMjcwMDAwfDA&ixlib=rb-4.1.0&q=80&w=400',
-      schedule: 'Rabu - Sabtu: 09:00 - 16:00',
-      experience: '16 Tahun',
-      education: 'Universitas Indonesia'
-    },
-  ];
+  type Doctor = {
+  id: number
+  name: string
+  specialization: string
+  schedule: string
+  experience: string
+  education: string
+  image: string
+}
 
+export default function DoctorsPage() {
+
+const [doctors, setDoctors] = useState<Doctor[]>([]);
+
+
+useEffect(() => {
+  fetch('http://127.0.0.1:8000/api/doctors')
+    .then(res => res.json())
+    .then(data => setDoctors(data))
+    .catch(err => console.log(err));
+}, []);
   return (
     <div className="min-h-screen flex flex-col" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <Header />
@@ -102,9 +48,9 @@ export default function DoctorsPage() {
         <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-6">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {doctors.map((doctor, index) => (
-                <div
-                  key={index}
+              {doctors.map((doctor) => (
+               <div
+                key={doctor.id}
                   className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow border border-gray-100"
                 >
                   <div className="aspect-[4/5] relative overflow-hidden">

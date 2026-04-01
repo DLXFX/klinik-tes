@@ -31,28 +31,51 @@ export default function Register() {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (formData.nik.length !== 16) return setNikError('NIK harus terdiri dari 16 digit');
-    if (formData.password !== formData.confirmPassword) return alert('Password tidak cocok!');
-    if (!ktpPreview) return alert('Silakan upload foto KTP Anda');
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    // LOGIC: Simpan ke localStorage
-    const existingPatients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-    if (existingPatients.some((p: any) => p.nik === formData.nik)) return alert('NIK sudah terdaftar!');
+  if (formData.nik.length !== 16) {
+    setNikError('NIK harus terdiri dari 16 digit');
+    return;
+  }
 
-    const newPatient = {
-      id: Date.now(),
-      ...formData,
-      ktpPhoto: ktpPreview,
-      status: 'pending',
-      noRM: null,
-      tanggalDaftar: new Date().toISOString().split('T')[0]
-    };
-    
-    localStorage.setItem('kliniku_patients', JSON.stringify([...existingPatients, newPatient]));
+  if (formData.password !== formData.confirmPassword) {
+    alert('Password tidak cocok!');
+    return;
+  }
+
+  if (!ktpFile) {
+    alert('Silakan upload foto KTP Anda');
+    return;
+  }
+
+  const data = new FormData();
+
+  data.append("nik", formData.nik);
+  data.append("name", formData.namaLengkap);
+  data.append("email", formData.nik + "@pasien.com");
+  data.append("password", formData.password);
+  data.append("medical_record_number", "");
+  data.append("foto_ktp", ktpFile); // KTP
+
+  try {
+    const res = await fetch("http://127.0.0.1:8000/api/patients", {
+      method: "POST",
+      body: data
+    });
+
+    if (!res.ok) {
+      throw new Error("Register gagal");
+    }
+
     setShowSuccessModal(true);
-  };
+
+  } catch (error) {
+    console.error(error);
+    alert("Terjadi kesalahan saat mendaftar");
+  }
+};
+    // LOGIC: Simpan ke localStorage
 
   return (
     <div className="min-h-screen bg-gray-50" style={{ fontFamily: 'Poppins, sans-serif' }}>

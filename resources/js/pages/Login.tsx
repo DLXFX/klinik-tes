@@ -5,30 +5,49 @@ import { Heart, Lock, User, Eye, EyeOff } from 'lucide-react';
 export default function Login() {
   const [formData, setFormData] = useState({ nikOrRM: '', password: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const patients = JSON.parse(localStorage.getItem('kliniku_patients') || '[]');
-    
-    // Cari user berdasarkan NIK atau NoRM dan password
-    const user = patients.find((p: any) => 
-      (p.nik === formData.nikOrRM || p.noRM === formData.nikOrRM) && 
-      p.password === formData.password
-    );
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    if (user) {
-      if (user.status === 'pending') {
-        alert('Gagal: Akun Anda masih menunggu persetujuan Admin.');
-      } else {
-        // Berhasil login
-        localStorage.setItem('kliniku_currentUser', JSON.stringify(user));
-        alert(`Selamat datang kembali, ${user.namaLengkap}!`);
-        router.visit('/buat-janji'); // Pindah ke halaman reservasi
-      }
-    } else {
-      alert('NIK/No. RM atau Password salah!');
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        nik: formData.nikOrRM,
+        password: formData.password
+      })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || 'Login gagal');
+      return;
     }
-  };
 
+    alert('Login berhasil!');
+
+if (data.role === 'admin') {
+
+  router.visit('/admin/dashboard');
+
+} else if (data.role === 'patient') {
+
+  // simpan data pasien
+  localStorage.setItem('kliniku_currentUser', JSON.stringify(data.patient));
+
+  router.visit('/buat-janji');
+
+}
+
+  } catch (error) {
+    console.error(error);
+    alert('Terjadi kesalahan saat login');
+  }
+};
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50" style={{ fontFamily: 'Poppins, sans-serif' }}>
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-lg">

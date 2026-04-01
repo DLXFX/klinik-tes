@@ -8,14 +8,26 @@ export function Header() {
 
   // Mengecek status login saat Header dimuat
   useEffect(() => {
-    const userData = localStorage.getItem('kliniku_currentUser');
-    if (userData) {
-      const user = JSON.parse(userData);
-      setIsLoggedIn(true);
-      // Mengambil kata pertama dari nama saja agar tombol tidak terlalu panjang
-      setUserName(user.namaLengkap ? user.namaLengkap.split(' ')[0] : user.nama || 'Pasien');
-    }
-  }, []);
+  const userData = localStorage.getItem('kliniku_currentUser');
+
+  if (!userData) return;
+
+  try {
+    const user = JSON.parse(userData);
+
+    setIsLoggedIn(true);
+
+    setUserName(
+      user?.namaLengkap
+        ? user.namaLengkap.split(' ')[0]
+        : user?.nama || 'Pasien'
+    );
+
+  } catch (error) {
+    console.error("User data rusak:", error);
+    localStorage.removeItem('kliniku_currentUser');
+  }
+}, []);
 
   const handleLogout = () => {
     if (confirm('Apakah Anda yakin ingin keluar?')) {

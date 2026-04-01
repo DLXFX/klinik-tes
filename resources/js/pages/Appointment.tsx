@@ -8,11 +8,21 @@ export default function AppointmentPage() {
   const [loggedInPatient, setLoggedInPatient] = useState<any>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   
+
+  const [doctors, setDoctors] = useState<any[]>([]);
+
   const [appointmentData, setAppointmentData] = useState({
     layanan: '', dokter: '', tanggal: '', waktu: '', keluhan: '',
   });
 
   // Cek Login Saat Halaman Dimuat
+ useEffect(() => {
+  fetch('http://127.0.0.1:8000/api/doctors')
+    .then(res => res.json())
+    .then(data => setDoctors(data))
+    .catch(err => console.log(err));
+}, []);
+
   useEffect(() => {
     const userData = localStorage.getItem('kliniku_currentUser');
     if (userData) {
@@ -31,27 +41,36 @@ export default function AppointmentPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Pastikan data pasien ada sebelum disubmit
-    if (!loggedInPatient) return;
+  const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    const newReservation = {
-      id: `RES-${Date.now()}`,
-      patientId: loggedInPatient.id,
-      noRM: loggedInPatient.noRM,
-      nama: loggedInPatient.namaLengkap,
-      ...appointmentData,
-      status: 'pending'
-    };
+  if (!loggedInPatient) return;
 
-    const existingRes = JSON.parse(localStorage.getItem('kliniku_reservations') || '[]');
-    localStorage.setItem('kliniku_reservations', JSON.stringify([...existingRes, newReservation]));
-    
-    alert('Sukses! Janji temu Anda telah dikirim dan dapat dilihat oleh Admin.');
-    router.visit('/'); 
+  const data = {
+    patient_id: loggedInPatient.id,
+    doctor_id: appointmentData.dokter,
+    service: appointmentData.layanan,
+    appointment_date: appointmentData.tanggal,
+    appointment_time: appointmentData.waktu,
+    complaint: appointmentData.keluhan
   };
+
+  try {
+    await fetch('http://127.0.0.1:8000/api/appointments', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    alert('Janji temu berhasil dibuat!');
+    router.visit('/');
+  } catch (error) {
+    console.error(error);
+    alert('Terjadi kesalahan saat membuat janji.');
+  }
+};
 
   // 1. Tahan render dengan layar loading agar tidak crash (Mencegah Black Screen)
   if (isCheckingAuth) {
@@ -147,13 +166,21 @@ export default function AppointmentPage() {
 
                 <div>
                   <label className="block text-sm font-semibold text-[#0B2447] mb-2">Pilih Dokter <span className="text-red-500">*</span></label>
-                  <select name="dokter" value={appointmentData.dokter} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none">
-                    <option value="">-- Pilih Dokter --</option>
-                    <option value="Dokter Tersedia (Umum)">Dokter Tersedia (Umum)</option>
-                    <option value="Dr. Andi Wijaya, Sp.PD">Dr. Andi Wijaya, Sp.PD</option>
-                    <option value="Dr. Budi Santoso, Sp.KG">Dr. Budi Santoso, Sp.KG</option>
-                    <option value="Dr. Citra Dewi, Sp.A">Dr. Citra Dewi, Sp.A</option>
-                  </select>
+                  <select
+  name="dokter"
+  value={appointmentData.dokter}
+  onChange={handleChange}
+  required
+  className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none"
+>
+  <option value="">-- Pilih Dokter --</option>
+
+  {doctors.map((doctor) => (
+    <option key={doctor.id} value={doctor.id}>
+      {doctor.name} - {doctor.specialization}
+    </option>
+  ))}
+</select>
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-6">
