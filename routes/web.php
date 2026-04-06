@@ -40,6 +40,7 @@ Route::delete('/api/patients/{id}', [PatientController::class, 'destroy']);
 
 Route::get('/api/doctors', [DoctorController::class, 'index']);
 Route::post('/api/doctors', [DoctorController::class, 'store']);
+Route::delete('/api/doctors/{id}', [DoctorController::class, 'destroy']);
 
 Route::get('/api/appointments', [AppointmentController::class, 'index']);
 Route::post('/api/appointments', [AppointmentController::class, 'store']);

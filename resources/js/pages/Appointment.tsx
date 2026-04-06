@@ -9,7 +9,6 @@ export default function AppointmentPage() {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [doctors, setDoctors] = useState<any[]>([]);
 
-  // PERBAIKAN: Tambah state noWhatsApp
   const [appointmentData, setAppointmentData] = useState({
     layanan: '', dokter: '', tanggal: '', waktu: '', noWhatsApp: '', keluhan: '',
   });
@@ -32,10 +31,50 @@ export default function AppointmentPage() {
     }
   }, []);
 
+  // LOGIC 1: Ambil daftar Layanan unik berdasarkan spesialisasi dokter
+  const availableServices = Array.from(new Set(doctors.map(d => d.specialization)));
+
+  // LOGIC 2: Filter Dokter berdasarkan layanan yang dipilih
+  const filteredDoctors = appointmentData.layanan
+    ? doctors.filter(d => d.specialization === appointmentData.layanan)
+    : [];
+
+  // LOGIC 3: Buat pilihan Jam Otomatis berdasarkan jadwal dokter yang dipilih
+  let availableTimes: string[] = [];
+  const selectedDoctor = doctors.find(d => d.id.toString() === appointmentData.dokter);
+
+  if (selectedDoctor && selectedDoctor.schedule) {
+    // Mengekstrak jam dari teks seperti "Senin - Jumat 08:00 - 15:00" menggunakan Regex
+    const timeMatch = selectedDoctor.schedule.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
+    if (timeMatch) {
+      const startHour = parseInt(timeMatch[1].split(':')[0]);
+      const endHour = parseInt(timeMatch[2].split(':')[0]);
+
+      // Generate jam dari startHour sampai sebelum endHour
+      for (let i = startHour; i < endHour; i++) {
+        availableTimes.push(`${i.toString().padStart(2, '0')}:00`);
+      }
+    }
+  }
+
+  // Fungsi Handle Change yang Diperbarui untuk Reset Beruntun
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setAppointmentData({
-      ...appointmentData,
-      [e.target.name]: e.target.value,
+    const { name, value } = e.target;
+    
+    setAppointmentData(prev => {
+      const newData = { ...prev, [name]: value };
+
+      // Jika Layanan diubah, kosongkan pilihan Dokter dan Waktu
+      if (name === 'layanan') {
+        newData.dokter = '';
+        newData.waktu = '';
+      }
+      // Jika Dokter diubah, kosongkan pilihan Waktu
+      if (name === 'dokter') {
+        newData.waktu = '';
+      }
+
+      return newData;
     });
   };
 
@@ -44,7 +83,6 @@ export default function AppointmentPage() {
 
     if (!loggedInPatient) return;
 
-    // PERBAIKAN: Payload data mencakup no_whatsapp
     const data = {
       patient_id: loggedInPatient.id,
       doctor_id: appointmentData.dokter,
@@ -168,10 +206,9 @@ export default function AppointmentPage() {
                   <label className="block text-sm font-semibold text-[#0B2447] mb-2">Pilih Layanan <span className="text-red-500">*</span></label>
                   <select name="layanan" value={appointmentData.layanan} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none">
                     <option value="">-- Pilih Layanan --</option>
-                    <option value="Konsultasi Dokter Umum">Konsultasi Dokter Umum</option>
-                    <option value="Perawatan Gigi & Mulut">Perawatan Gigi & Mulut</option>
-                    <option value="Cek Laboratorium">Cek Laboratorium</option>
-                    <option value="Medical Check-Up">Medical Check-Up</option>
+                    {availableServices.map((service, idx) => (
+                      <option key={idx} value={service as string}>{service as string}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -182,12 +219,13 @@ export default function AppointmentPage() {
                     value={appointmentData.dokter}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none"
+                    disabled={!appointmentData.layanan} // Disable jika layanan belum dipilih
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
                   >
-                    <option value="">-- Pilih Dokter --</option>
-                    {doctors.map((doctor) => (
+                    <option value="">{appointmentData.layanan ? '-- Pilih Dokter --' : '-- Pilih Layanan Terlebih Dahulu --'}</option>
+                    {filteredDoctors.map((doctor) => (
                       <option key={doctor.id} value={doctor.id}>
-                        {doctor.name} - {doctor.specialization}
+                        {doctor.name} ({doctor.schedule})
                       </option>
                     ))}
                   </select>
@@ -200,13 +238,18 @@ export default function AppointmentPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-[#0B2447] mb-2">Waktu <span className="text-red-500">*</span></label>
-                    <select name="waktu" value={appointmentData.waktu} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none">
-                      <option value="">-- Pilih Waktu --</option>
-                      <option value="09:00">09:00 WIB</option>
-                      <option value="10:00">10:00 WIB</option>
-                      <option value="11:00">11:00 WIB</option>
-                      <option value="13:00">13:00 WIB</option>
-                      <option value="15:00">15:00 WIB</option>
+                    <select 
+                      name="waktu" 
+                      value={appointmentData.waktu} 
+                      onChange={handleChange} 
+                      required 
+                      disabled={!appointmentData.dokter} // Disable jika dokter belum dipilih
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                    >
+                      <option value="">{appointmentData.dokter ? '-- Pilih Waktu --' : '-- Pilih Dokter Dulu --'}</option>
+                      {availableTimes.map((time, idx) => (
+                        <option key={idx} value={time}>{time} WIB</option>
+                      ))}
                     </select>
                   </div>
                 </div>

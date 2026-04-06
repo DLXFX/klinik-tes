@@ -7,26 +7,41 @@ use Illuminate\Http\Request;
 
 class DoctorController extends Controller
 {
-    // mengambil semua dokter
     public function index()
     {
-        $doctors = Doctor::all();
-
-        return response()->json($doctors);
+        return response()->json(Doctor::all());
     }
 
-    // tambah dokter
+    // TAMBAHKAN KODE DI BAWAH INI:
     public function store(Request $request)
     {
+        $request->validate([
+            'name' => 'required',
+            'specialization' => 'required',
+            'schedule' => 'required',
+        ]);
+
+        // Beri foto default jika saat mendaftar tidak ada link foto yang dimasukkan
+        $image = $request->image ?: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d';
+
         $doctor = Doctor::create([
             'name' => $request->name,
             'specialization' => $request->specialization,
             'schedule' => $request->schedule,
-            'experience' => $request->experience,
-            'education' => $request->education,
-            'image' => $request->image
+            'experience' => $request->experience ?: '-',
+            'education' => $request->education ?: '-',
+            'image' => $image,
         ]);
 
-        return response()->json($doctor);
+        return response()->json(['message' => 'Dokter berhasil ditambahkan', 'doctor' => $doctor]);
+    }
+
+    public function destroy($id)
+    {
+        if (Doctor::destroy($id)) {
+            return response()->json(['message' => 'Dokter berhasil dihapus']);
+        }
+        
+        return response()->json(['message' => 'Dokter tidak ditemukan'], 404);
     }
 }

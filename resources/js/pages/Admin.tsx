@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/react';
 import { 
   LayoutDashboard, Users, Calendar, LogOut, User, CreditCard, 
   FileText, Check, X, Clock, CheckCircle, XCircle, AlertCircle, 
-  Heart, Phone, MapPin, Eye, Trash2 
+  Heart, Phone, MapPin, Eye, Trash2, Plus, Stethoscope
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -14,7 +14,23 @@ export default function AdminDashboard() {
   const [reservationList, setReservationList] = useState<any[]>([]);
   const [selectedKTP, setSelectedKTP] = useState<string | null>(null);
 
+  // ================= STATE KHUSUS DOKTER =================
+  const [doctorList, setDoctorList] = useState<any[]>([]);
+  const [showAddDoctor, setShowAddDoctor] = useState(false);
+  const [newDoctor, setNewDoctor] = useState({
+    name: '', specialization: '', experience: '', education: '', image: ''
+  });
+
+  // State Khusus Untuk Memecah Input Jadwal agar tidak Typo
+  const [scheduleStartDay, setScheduleStartDay] = useState('Senin');
+  const [scheduleEndDay, setScheduleEndDay] = useState('Jumat');
+  const [scheduleStartTime, setScheduleStartTime] = useState('08:00');
+  const [scheduleEndTime, setScheduleEndTime] = useState('15:00');
+
+  const daysOfWeek = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+
   useEffect(() => {
+    // Fetch Pasien
     fetch('/api/patients')
       .then(res => res.json())
       .then(data => {
@@ -22,13 +38,82 @@ export default function AdminDashboard() {
         setApprovedList(data.filter((p:any) => p.status === 'approved'));
       });
 
+    // Fetch Reservasi
     fetch('/api/appointments')
       .then(res => res.json())
       .then(data => {
         setReservationList(data);
       });
+
+    // Fetch Dokter
+    fetch('/api/doctors')
+      .then(res => res.json())
+      .then(data => {
+        setDoctorList(data);
+      });
   }, []);
 
+  // ================= FUNGSI KELOLA DOKTER =================
+  const handleAddDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      // Gabungkan jadwal otomatis
+      const finalSchedule = `${scheduleStartDay} - ${scheduleEndDay} ${scheduleStartTime} - ${scheduleEndTime}`;
+      
+      const payload = {
+        ...newDoctor,
+        schedule: finalSchedule
+      };
+
+      const res = await fetch('/api/doctors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      
+      if (res.ok) {
+        alert('Dokter berhasil ditambahkan!');
+        setShowAddDoctor(false);
+        // Reset Form
+        setNewDoctor({ name: '', specialization: '', experience: '', education: '', image: '' });
+        setScheduleStartDay('Senin'); setScheduleEndDay('Jumat'); setScheduleStartTime('08:00'); setScheduleEndTime('15:00');
+        // Refresh daftar dokter
+        fetch('/api/doctors').then(r => r.json()).then(d => setDoctorList(d));
+      } else {
+        alert('Gagal menambahkan dokter');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleDeleteDoctor = async (id: number) => {
+    if (!confirm('Yakin ingin menghapus dokter ini dari sistem?')) return;
+    
+    try {
+      const res = await fetch(`/api/doctors/${id}`, { 
+        method: 'DELETE',
+        headers: { 
+          'Accept': 'application/json' // Wajib agar Laravel membalas dengan JSON
+        }
+      });
+      
+      if (res.ok) {
+        alert('Dokter berhasil dihapus!');
+        // Refresh daftar dokter
+        fetch('/api/doctors').then(r => r.json()).then(d => setDoctorList(d));
+      } else {
+        // Jika gagal, tangkap pesan error dari Laravel
+        const errorData = await res.json();
+        alert('Gagal menghapus: ' + (errorData.message || res.statusText));
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Terjadi kesalahan jaringan/server.');
+    }
+  };
+
+  // ================= FUNGSI PASIEN & RESERVASI =================
   const handleApprovePatient = async (id:number) => {
     await fetch(`/api/patients/${id}/approve`,{
       method:'POST'
@@ -148,6 +233,9 @@ export default function AdminDashboard() {
           <button onClick={() => setCurrentView('patients')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${currentView === 'patients' ? 'bg-emerald-500 text-white shadow-lg font-bold' : 'text-gray-300 hover:bg-white/10'}`}>
             <Users className="w-5 h-5" /> Data Pasien
           </button>
+          <button onClick={() => setCurrentView('doctors')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${currentView === 'doctors' ? 'bg-emerald-500 text-white shadow-lg font-bold' : 'text-gray-300 hover:bg-white/10'}`}>
+            <Stethoscope className="w-5 h-5" /> Kelola Dokter
+          </button>
           <button onClick={() => setCurrentView('reservations')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${currentView === 'reservations' ? 'bg-emerald-500 text-white shadow-lg font-bold' : 'text-gray-300 hover:bg-white/10'}`}>
             <Calendar className="w-5 h-5" /> Jadwal Reservasi
           </button>
@@ -171,60 +259,209 @@ export default function AdminDashboard() {
               <p className="text-gray-600">Ringkasan aktivitas klinik hari ini.</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-emerald-500">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                    <Users className="w-6 h-6 text-emerald-600" />
+                  <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <Users className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <span className="text-3xl font-bold text-gray-900">{approvedList.length}</span>
+                  <span className="text-2xl font-bold text-gray-900">{approvedList.length}</span>
                 </div>
-                <h3 className="text-gray-800 font-bold text-lg">Pasien Terdaftar</h3>
-                <p className="text-sm text-emerald-600 mt-1">Pasien aktif di sistem</p>
-              </div>
-
-              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-amber-500">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                    <AlertCircle className="w-6 h-6 text-amber-600" />
-                  </div>
-                  <span className="text-3xl font-bold text-gray-900">{pendingList.length}</span>
-                </div>
-                <h3 className="text-gray-800 font-bold text-lg">Butuh Persetujuan</h3>
-                <p className="text-sm text-amber-600 mt-1">Pendaftaran baru pasien</p>
+                <h3 className="text-gray-800 font-bold text-sm">Pasien Terdaftar</h3>
               </div>
 
               <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                    <Calendar className="w-6 h-6 text-blue-600" />
+                  <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                    <Stethoscope className="w-5 h-5 text-blue-600" />
                   </div>
-                  <span className="text-3xl font-bold text-gray-900">{todayAppointments}</span>
+                  <span className="text-2xl font-bold text-gray-900">{doctorList.length}</span>
                 </div>
-                <h3 className="text-gray-800 font-bold text-lg">Janji Temu Hari Ini</h3>
-                <p className="text-sm text-blue-600 mt-1">Total pasien yang akan datang</p>
+                <h3 className="text-gray-800 font-bold text-sm">Dokter Aktif</h3>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-amber-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
+                    <AlertCircle className="w-5 h-5 text-amber-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900">{pendingList.length}</span>
+                </div>
+                <h3 className="text-gray-800 font-bold text-sm">Butuh Persetujuan</h3>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-purple-500">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <span className="text-2xl font-bold text-gray-900">{todayAppointments}</span>
+                </div>
+                <h3 className="text-gray-800 font-bold text-sm">Janji Temu Hari Ini</h3>
               </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <h3 className="text-xl font-bold text-[#0B2447] mb-4">Aksi Cepat</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button onClick={() => setCurrentView('patients')} className="flex items-center gap-4 p-5 border-2 border-gray-100 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left">
                   <Users className="w-8 h-8 text-emerald-600" />
                   <div>
-                    <p className="font-bold text-gray-900">Kelola Data Pasien</p>
-                    <p className="text-sm text-gray-600">Setujui atau tolak pendaftaran baru</p>
+                    <p className="font-bold text-gray-900">Data Pasien</p>
+                    <p className="text-xs text-gray-600">Kelola pendaftaran</p>
                   </div>
                 </button>
-                <button onClick={() => setCurrentView('reservations')} className="flex items-center gap-4 p-5 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
-                  <Calendar className="w-8 h-8 text-blue-600" />
+                <button onClick={() => setCurrentView('doctors')} className="flex items-center gap-4 p-5 border-2 border-gray-100 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
+                  <Stethoscope className="w-8 h-8 text-blue-600" />
                   <div>
-                    <p className="font-bold text-gray-900">Kelola Jadwal Reservasi</p>
-                    <p className="text-sm text-gray-600">Update status janji temu pasien</p>
+                    <p className="font-bold text-gray-900">Data Dokter</p>
+                    <p className="text-xs text-gray-600">Tambah dokter baru</p>
+                  </div>
+                </button>
+                <button onClick={() => setCurrentView('reservations')} className="flex items-center gap-4 p-5 border-2 border-gray-100 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition-all text-left">
+                  <Calendar className="w-8 h-8 text-purple-600" />
+                  <div>
+                    <p className="font-bold text-gray-900">Jadwal Reservasi</p>
+                    <p className="text-xs text-gray-600">Update status janji</p>
                   </div>
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ===================== VIEW: KELOLA DOKTER ===================== */}
+        {currentView === 'doctors' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h2 className="text-3xl font-bold text-[#0B2447]">Kelola Dokter</h2>
+                    <p className="text-gray-600">Tambah atau hapus dokter dari sistem.</p>
+                </div>
+                <button onClick={() => setShowAddDoctor(true)} className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-full font-bold flex items-center gap-2 shadow-lg transition-all">
+                    <Plus className="w-5 h-5" /> Tambah Dokter Baru
+                </button>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50 border-b-2 border-gray-100">
+                            <tr>
+                                <th className="py-4 px-6 font-bold text-gray-800">Nama Dokter</th>
+                                <th className="py-4 px-6 font-bold text-gray-800">Layanan/Spesialis</th>
+                                <th className="py-4 px-6 font-bold text-gray-800">Jadwal Praktik</th>
+                                <th className="py-4 px-6 font-bold text-center text-gray-800">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {doctorList.map((d) => (
+                                <tr key={d.id} className="hover:bg-gray-50 transition-colors">
+                                    <td className="py-4 px-6 font-bold text-gray-900 flex items-center gap-3">
+                                        <img src={d.image} alt={d.name} className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm" />
+                                        {d.name}
+                                    </td>
+                                    <td className="py-4 px-6">
+                                        <span className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">
+                                          {d.specialization}
+                                        </span>
+                                    </td>
+                                    <td className="py-4 px-6 text-gray-600 text-sm">{d.schedule}</td>
+                                    <td className="py-4 px-6 text-center">
+                                        <button onClick={() => handleDeleteDoctor(d.id)} className="text-red-500 hover:text-white hover:bg-red-500 border border-red-200 p-2 rounded-full transition-all" title="Hapus Dokter">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {doctorList.length === 0 && (
+                              <tr><td colSpan={4} className="text-center py-8 text-gray-500">Belum ada data dokter.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Modal Tambah Dokter */}
+            {showAddDoctor && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-[#0B2447]">Form Dokter Baru</h3>
+                            <button onClick={() => setShowAddDoctor(false)} className="text-gray-400 hover:text-red-500 bg-gray-100 p-2 rounded-full"><X className="w-5 h-5"/></button>
+                        </div>
+                        <form onSubmit={handleAddDoctor} className="space-y-4">
+                            <div>
+                              <label className="block text-sm font-semibold text-[#0B2447] mb-1">Nama Lengkap & Gelar <span className="text-red-500">*</span></label>
+                              <input type="text" placeholder="Contoh: Dr. John Doe, Sp.A" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" required value={newDoctor.name} onChange={e => setNewDoctor({...newDoctor, name: e.target.value})} />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-semibold text-[#0B2447] mb-1">Spesialisasi / Layanan <span className="text-red-500">*</span></label>
+                              <input type="text" placeholder="Contoh: Dokter Umum" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" required value={newDoctor.specialization} onChange={e => setNewDoctor({...newDoctor, specialization: e.target.value})} />
+                              <p className="text-xs text-gray-500 mt-1">*Pastikan penulisan sama (contoh: "Dokter Umum") agar tergabung di opsi yang sama pada saat buat janji.</p>
+                            </div>
+
+                            {/* PERBAIKAN: Input Jadwal Praktik Dipecah */}
+                            <div>
+                              <label className="block text-sm font-semibold text-[#0B2447] mb-2">Jadwal Praktik <span className="text-red-500">*</span></label>
+                              
+                              <div className="grid grid-cols-2 gap-4 mb-3">
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Hari Mulai</label>
+                                  <select className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={scheduleStartDay} onChange={e => setScheduleStartDay(e.target.value)}>
+                                    {daysOfWeek.map(d => <option key={d} value={d}>{d}</option>)}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Hari Selesai</label>
+                                  <select className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={scheduleEndDay} onChange={e => setScheduleEndDay(e.target.value)}>
+                                    {daysOfWeek.map(d => <option key={d} value={d}>{d}</option>)}
+                                  </select>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Jam Buka</label>
+                                  <input type="time" required className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={scheduleStartTime} onChange={e => setScheduleStartTime(e.target.value)} />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-1">Jam Tutup</label>
+                                  <input type="time" required className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={scheduleEndTime} onChange={e => setScheduleEndTime(e.target.value)} />
+                                </div>
+                              </div>
+
+                              <div className="mt-3 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                <p className="text-xs text-emerald-800">
+                                  <strong>Hasil Jadwal: </strong> 
+                                  {scheduleStartDay} - {scheduleEndDay} {scheduleStartTime} - {scheduleEndTime}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <label className="block text-sm font-semibold text-[#0B2447] mb-1">Lama Pengalaman</label>
+                                <input type="text" placeholder="Contoh: 5 Tahun" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={newDoctor.experience} onChange={e => setNewDoctor({...newDoctor, experience: e.target.value})} />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-semibold text-[#0B2447] mb-1">Lulusan Universitas</label>
+                                <input type="text" placeholder="Contoh: Universitas Indonesia" className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={newDoctor.education} onChange={e => setNewDoctor({...newDoctor, education: e.target.value})} />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-sm font-semibold text-[#0B2447] mb-1">Link Foto Dokter (Opsional)</label>
+                              <input type="url" placeholder="Contoh: https://images.unsplash.com/..." className="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-emerald-500 outline-none text-gray-900 bg-white" value={newDoctor.image} onChange={e => setNewDoctor({...newDoctor, image: e.target.value})} />
+                              <p className="text-xs text-gray-500 mt-1">Gunakan link gambar (URL). Kosongkan untuk menggunakan gambar default.</p>
+                            </div>
+
+                            <button type="submit" className="w-full bg-[#0B2447] hover:bg-[#0B2447]/90 text-white py-4 rounded-full font-bold shadow-lg transition-all text-lg mt-4">Simpan Data Dokter</button>
+                        </form>
+                    </div>
+                </div>
+            )}
           </div>
         )}
 
@@ -303,7 +540,6 @@ export default function AdminDashboard() {
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
-                        {/* PERBAIKAN: Header Diperbarui untuk WA dan KTP */}
                         <tr className="border-b-2 border-gray-200 text-gray-800">
                           <th className="py-3 px-4 font-bold">No. RM</th>
                           <th className="py-3 px-4 font-bold">Nama & NIK</th>
@@ -324,11 +560,9 @@ export default function AdminDashboard() {
                               <p className="font-bold text-gray-900">{p.name}</p>
                               <p className="text-sm text-gray-500">{p.nik}</p>
                             </td>
-                            {/* PERBAIKAN: Isi Nomor WA */}
                             <td className="py-4 px-4 align-middle text-gray-600">
                               {p.no_whatsapp || p.noWhatsApp || <span className="text-gray-400 italic">Kosong</span>}
                             </td>
-                            {/* PERBAIKAN: Tombol Lihat KTP */}
                             <td className="py-4 px-4 align-middle text-center">
                                 <button
                                   onClick={() => setSelectedKTP(`/storage/${p.foto_ktp}`)}
