@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, router } from '@inertiajs/react';
 import { Header } from '../components/header';
 import { Footer } from '../components/footer';
-import { User, CreditCard, FileText, Calendar as CalendarIcon, Stethoscope, Clock, MapPin, Phone, Mail, Shield } from 'lucide-react';
+import { User, CreditCard, FileText, Calendar as CalendarIcon, Stethoscope, Clock, MapPin, Phone } from 'lucide-react';
 
 export default function AppointmentPage() {
   const [loggedInPatient, setLoggedInPatient] = useState<any>(null);
@@ -31,47 +31,90 @@ export default function AppointmentPage() {
     }
   }, []);
 
-  // LOGIC 1: Ambil daftar Layanan unik berdasarkan spesialisasi dokter
+  // LOGIC 1: Ambil daftar Layanan unik
   const availableServices = Array.from(new Set(doctors.map(d => d.specialization)));
 
-  // LOGIC 2: Filter Dokter berdasarkan layanan yang dipilih
+  // LOGIC 2: Filter Dokter berdasarkan layanan
   const filteredDoctors = appointmentData.layanan
     ? doctors.filter(d => d.specialization === appointmentData.layanan)
     : [];
 
-  // LOGIC 3: Buat pilihan Jam Otomatis berdasarkan jadwal dokter yang dipilih
+  // ================= LOGIC 3: SMART DATE PICKER (MENGHITUNG TANGGAL VALID) =================
   let availableTimes: string[] = [];
+  let allowedDays: number[] = [];
+  let validDates: { value: string; label: string }[] = [];
+
   const selectedDoctor = doctors.find(d => d.id.toString() === appointmentData.dokter);
 
   if (selectedDoctor && selectedDoctor.schedule) {
-    // Mengekstrak jam dari teks seperti "Senin - Jumat 08:00 - 15:00" menggunakan Regex
+    // Ekstrak Jam (08:00 - 15:00)
     const timeMatch = selectedDoctor.schedule.match(/(\d{2}:\d{2})\s*-\s*(\d{2}:\d{2})/);
     if (timeMatch) {
       const startHour = parseInt(timeMatch[1].split(':')[0]);
       const endHour = parseInt(timeMatch[2].split(':')[0]);
-
-      // Generate jam dari startHour sampai sebelum endHour
       for (let i = startHour; i < endHour; i++) {
         availableTimes.push(`${i.toString().padStart(2, '0')}:00`);
       }
     }
+
+    // Ekstrak Hari (Senin - Jumat) -> Index JS (Minggu=0, Senin=1, dst)
+    const dayMatch = selectedDoctor.schedule.match(/([a-zA-Z]+)\s*-\s*([a-zA-Z]+)/);
+    if (dayMatch) {
+      const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const startIdx = dayNames.indexOf(dayMatch[1]);
+      const endIdx = dayNames.indexOf(dayMatch[2]);
+
+      if (startIdx !== -1 && endIdx !== -1) {
+        if (startIdx <= endIdx) {
+          for (let i = startIdx; i <= endIdx; i++) allowedDays.push(i);
+        } else {
+          for (let i = startIdx; i <= 6; i++) allowedDays.push(i);
+          for (let i = 0; i <= endIdx; i++) allowedDays.push(i);
+        }
+      }
+    }
+
+    // Generate Tanggal Valid untuk 14 Hari Kedepan berdasarkan 'allowedDays'
+    if (allowedDays.length > 0) {
+      const today = new Date();
+      const dayNamesIndo = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const monthNamesIndo = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+      // Mulai dari besok (H+1) agar tidak bentrok dengan jam yang sudah lewat hari ini
+      for (let i = 1; i <= 14; i++) {
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + i);
+        
+        if (allowedDays.includes(futureDate.getDay())) {
+          // Format Value untuk Database (YYYY-MM-DD)
+          const yyyy = futureDate.getFullYear();
+          const mm = String(futureDate.getMonth() + 1).padStart(2, '0');
+          const dd = String(futureDate.getDate()).padStart(2, '0');
+          const valueDate = `${yyyy}-${mm}-${dd}`;
+          
+          // Format Label untuk User (Senin, 10 April 2026)
+          const dayName = dayNamesIndo[futureDate.getDay()];
+          const monthName = monthNamesIndo[futureDate.getMonth()];
+          const labelDate = `${dayName}, ${futureDate.getDate()} ${monthName} ${yyyy}`;
+
+          validDates.push({ value: valueDate, label: labelDate });
+        }
+      }
+    }
   }
 
-  // Fungsi Handle Change yang Diperbarui untuk Reset Beruntun
+  // ================= FUNGSI HANDLE CHANGE =================
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
+
     setAppointmentData(prev => {
       const newData = { ...prev, [name]: value };
 
-      // Jika Layanan diubah, kosongkan pilihan Dokter dan Waktu
       if (name === 'layanan') {
-        newData.dokter = '';
-        newData.waktu = '';
+        newData.dokter = ''; newData.waktu = ''; newData.tanggal = '';
       }
-      // Jika Dokter diubah, kosongkan pilihan Waktu
       if (name === 'dokter') {
-        newData.waktu = '';
+        newData.waktu = ''; newData.tanggal = '';
       }
 
       return newData;
@@ -80,7 +123,6 @@ export default function AppointmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!loggedInPatient) return;
 
     const data = {
@@ -96,12 +138,9 @@ export default function AppointmentPage() {
     try {
       await fetch('/api/appointments', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-
       alert('Janji temu berhasil dibuat!');
       router.visit('/');
     } catch (error) {
@@ -110,17 +149,7 @@ export default function AppointmentPage() {
     }
   };
 
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0B2447]">
-        <div className="text-emerald-400 font-semibold text-xl animate-pulse flex items-center gap-3">
-          <Stethoscope className="w-8 h-8" />
-          Memeriksa data pasien...
-        </div>
-      </div>
-    );
-  }
-
+  if (isCheckingAuth) return null;
   if (!loggedInPatient) return null;
 
   return (
@@ -138,47 +167,21 @@ export default function AppointmentPage() {
         <section className="py-16">
           <div className="max-w-7xl mx-auto px-6 grid lg:grid-cols-3 gap-8">
             
-            {/* Left Column - Profil & Kontak */}
+            {/* Left Column - Profil & Kontak (DIPERPENDEK UNTUK KETERBACAAN, SAMA SEPERTI ASLINYA) */}
             <div className="lg:col-span-1 space-y-6">
-              
               <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
                 <div className="bg-[#0B2447] p-6 text-white flex items-center gap-4 rounded-t-2xl">
                   <div className="w-12 h-12 rounded-full border-2 border-emerald-500/30 flex items-center justify-center flex-shrink-0 bg-white/5">
                     <User className="w-6 h-6 text-emerald-400" />
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-300 mb-1">Data Pasien</p>
-                    <h3 className="text-lg font-bold">Informasi Anda</h3>
-                  </div>
+                  <div><p className="text-xs text-gray-300 mb-1">Data Pasien</p><h3 className="text-lg font-bold">Informasi Anda</h3></div>
                 </div>
-
                 <div className="p-6 space-y-5 bg-white border border-gray-100 rounded-b-2xl">
-                  <div className="flex items-center gap-4">
-                    <User className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 mb-0.5">Nama Lengkap</p>
-                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.name}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <CreditCard className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 mb-0.5">NIK</p>
-                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.nik}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <FileText className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs text-gray-500 mb-0.5">No. Rekam Medis</p>
-                      <p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.medical_record_number || '-'}</p>
-                    </div>
-                  </div>
+                  <div className="flex items-center gap-4"><User className="w-5 h-5 text-emerald-500 flex-shrink-0" /><div><p className="text-xs text-gray-500 mb-0.5">Nama Lengkap</p><p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.name}</p></div></div>
+                  <div className="flex items-center gap-4"><CreditCard className="w-5 h-5 text-emerald-500 flex-shrink-0" /><div><p className="text-xs text-gray-500 mb-0.5">NIK</p><p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.nik}</p></div></div>
+                  <div className="flex items-center gap-4"><FileText className="w-5 h-5 text-emerald-500 flex-shrink-0" /><div><p className="text-xs text-gray-500 mb-0.5">No. Rekam Medis</p><p className="text-[#0B2447] font-semibold text-sm">{loggedInPatient.medical_record_number || '-'}</p></div></div>
                 </div>
               </div>
-
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h3 className="text-xl font-bold text-[#0B2447] mb-6">Informasi Kontak</h3>
                 <div className="space-y-5 text-sm">
@@ -204,7 +207,7 @@ export default function AppointmentPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-[#0B2447] mb-2">Pilih Layanan <span className="text-red-500">*</span></label>
-                  <select name="layanan" value={appointmentData.layanan} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none">
+                  <select name="layanan" value={appointmentData.layanan} onChange={handleChange} required className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none cursor-pointer">
                     <option value="">-- Pilih Layanan --</option>
                     {availableServices.map((service, idx) => (
                       <option key={idx} value={service as string}>{service as string}</option>
@@ -219,8 +222,8 @@ export default function AppointmentPage() {
                     value={appointmentData.dokter}
                     onChange={handleChange}
                     required
-                    disabled={!appointmentData.layanan} // Disable jika layanan belum dipilih
-                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                    disabled={!appointmentData.layanan}
+                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400 cursor-pointer"
                   >
                     <option value="">{appointmentData.layanan ? '-- Pilih Dokter --' : '-- Pilih Layanan Terlebih Dahulu --'}</option>
                     {filteredDoctors.map((doctor) => (
@@ -232,10 +235,30 @@ export default function AppointmentPage() {
                 </div>
 
                 <div className="grid sm:grid-cols-2 gap-6">
+                  {/* PERUBAHAN UTAMA: DARI INPUT DATE MENJADI DROPDOWN TANGGAL PINTAR */}
                   <div>
                     <label className="block text-sm font-semibold text-[#0B2447] mb-2">Tanggal <span className="text-red-500">*</span></label>
-                    <input type="date" name="tanggal" value={appointmentData.tanggal} onChange={handleChange} required min={new Date().toISOString().split('T')[0]} className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 text-gray-900 outline-none bg-white" />
+                    <select 
+                      name="tanggal" 
+                      value={appointmentData.tanggal} 
+                      onChange={handleChange} 
+                      required 
+                      disabled={!appointmentData.dokter || validDates.length === 0} 
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 text-gray-900 outline-none bg-white disabled:bg-gray-100 disabled:text-gray-400 cursor-pointer" 
+                    >
+                      <option value="">
+                        {!appointmentData.dokter 
+                          ? '-- Pilih Dokter Dulu --' 
+                          : validDates.length === 0 
+                            ? 'Tidak ada jadwal tersedia' 
+                            : '-- Pilih Tanggal Tersedia --'}
+                      </option>
+                      {validDates.map((dateObj, idx) => (
+                        <option key={idx} value={dateObj.value}>{dateObj.label}</option>
+                      ))}
+                    </select>
                   </div>
+
                   <div>
                     <label className="block text-sm font-semibold text-[#0B2447] mb-2">Waktu <span className="text-red-500">*</span></label>
                     <select 
@@ -243,10 +266,10 @@ export default function AppointmentPage() {
                       value={appointmentData.waktu} 
                       onChange={handleChange} 
                       required 
-                      disabled={!appointmentData.dokter} // Disable jika dokter belum dipilih
-                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400"
+                      disabled={!appointmentData.tanggal}
+                      className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-emerald-500 bg-white text-gray-900 outline-none disabled:bg-gray-100 disabled:text-gray-400 cursor-pointer"
                     >
-                      <option value="">{appointmentData.dokter ? '-- Pilih Waktu --' : '-- Pilih Dokter Dulu --'}</option>
+                      <option value="">{appointmentData.tanggal ? '-- Pilih Waktu --' : '-- Pilih Tanggal Dulu --'}</option>
                       {availableTimes.map((time, idx) => (
                         <option key={idx} value={time}>{time} WIB</option>
                       ))}
